@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+var jwt = require('jsonwebtoken');
 const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -31,6 +32,19 @@ async function run() {
     await client.connect();
     const services = client.db('carMechanic').collection('services');
     const bookingCollection = client.db('carMechanic').collection('booking');
+    // user token 
+    app.post('/jwt',async(req,res)=>{
+        const user = req.body;
+        const token = jwt.sign(user,process.env.ACCESS_TOKEN,{ expiresIn: '1h' })
+        console.log(token);
+        res.cookie('token',token,{
+            httpOnly:true,
+            secure:false,
+            sameSite:'none'
+        })
+        .send({sucess:true});
+    })
+
     app.get('/services',async(req,res)=>{
         const cursor =  services.find();
         const result = await cursor.toArray();
@@ -49,14 +63,14 @@ async function run() {
     app.post('/checkout',async(req,res)=>{
         const orderInfo = req.body;
         const result = await bookingCollection.insertOne(orderInfo);
-        console.log(result);
+        // console.log(result);
         res.send(result); 
     })
     app.delete('/checkout/:id',async(req,res)=>{
         const id = req.params.id;
         const query = {_id:new ObjectId(id)}
         const result = await bookingCollection.deleteOne(query);
-        console.log(result);
+        // console.log(result);
         res.send(result); 
     })
     app.get('/services/:id',async(req,res)=>{
@@ -66,7 +80,7 @@ async function run() {
             projection:{title:1,price:1,service_id:1},
         };
         const result = await services.findOne(query,option);
-        console.log(result);
+        // console.log(result);
         res.send(result);
     })
 
